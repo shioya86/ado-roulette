@@ -1,0 +1,65 @@
+/* RouletteBoard の見た目。CSS Modules でこのコンポーネントに閉じたスタイル。 */
+
+.board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.items {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 360px;
+}
+
+.item {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  border: 2px solid #d0d0d8;
+  border-radius: 12px;
+  background: #fafafc;
+  font-weight: 600;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.winner {
+  border-color: #e0397a;
+  background: #ffe3ef;
+  color: #b30055;
+  transform: scale(1.06);
+}
+
+.spinButton {
+  padding: 0.85rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  background: #e0397a;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.spinButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.spinButton:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.spinButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.result {
+  min-height: 1.6rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}

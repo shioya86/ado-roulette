@@ -12,4 +12,11 @@ body {
 
 main {
   padding: 2rem;
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 1.5rem;
 }
