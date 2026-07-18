@@ -1,0 +1,15 @@
+/* 最小限のリセット。デザインはこれから追加していきます。 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+}
+
+main {
+  padding: 2rem;
+}
