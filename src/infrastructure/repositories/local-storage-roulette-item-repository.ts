@@ -8,16 +8,24 @@ interface StoredItem {
 }
 
 /**
- * 初回起動時に入れておくモックデータ（フルーツ）。
- * 将来は Ado の曲名や、アルバム/セトリ由来の曲リストに差し替える。
+ * 初回起動時に入れておく seed データ（Ado の代表曲）。
+ * id は安定した識別子（ローマ字スラッグ）、label は表示用の曲名。
+ * 将来アルバム/セトリ単位で切り替える際は、この固定リストを Song/SongSource
+ * ベースのデータ源に差し替える（docs/DESIGN.md 参照）。
  */
 const DEFAULT_ITEMS: StoredItem[] = [
-  { id: "banana", label: "banana" },
-  { id: "apple", label: "apple" },
-  { id: "cherry", label: "cherry" },
-  { id: "grape", label: "grape" },
-  { id: "orange", label: "orange" },
-  { id: "melon", label: "melon" },
+  { id: "shinjidai", label: "新時代" },
+  { id: "usseewa", label: "うっせぇわ" },
+  { id: "giragira", label: "ギラギラ" },
+  { id: "odo", label: "踊" },
+  { id: "ashura", label: "阿修羅ちゃん" },
+  { id: "saikyo", label: "私は最強" },
+  { id: "gyakko", label: "逆光" },
+  { id: "show", label: "唱" },
+  { id: "readymade", label: "レディメイド" },
+  { id: "aitakute", label: "会いたくて" },
+  { id: "kurakura", label: "クラクラ" },
+  { id: "himawari", label: "向日葵" },
 ];
 
 /**
@@ -31,7 +39,8 @@ export class LocalStorageRouletteItemRepository
   implements RouletteItemRepository
 {
   // 保存キー。他アプリと衝突しないよう名前空間を付ける。
-  private static readonly STORAGE_KEY = "ado-roulette:items";
+  // seed 内容を変えたらバージョンを上げ、旧データ（フルーツ等）を無効化する。
+  private static readonly STORAGE_KEY = "ado-roulette:items:v2";
 
   async findAll(): Promise<RouletteItem[]> {
     const stored = this.read();

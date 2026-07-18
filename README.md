@@ -60,8 +60,8 @@ src/
 ### 項目データを変えるとき（例: フルーツ → 曲名）
 - 当面は `src/infrastructure/repositories/local-storage-roulette-item-repository.ts` の
   `DEFAULT_ITEMS` を書き換える（初回シードデータ）。
-- localStorage に**古いデータが残る**点に注意。保存キーは `ado-roulette:items`。
-  データ構造を変えたら、キーにバージョンを付ける等で旧データを無効化すること。
+- localStorage に**古いデータが残る**点に注意。保存キーは `ado-roulette:items:v2`。
+  seed 内容やデータ構造を変えたら、キー末尾のバージョンを上げて旧データを無効化すること。
 - アルバム / セトリ単位の切り替えを入れる場合は、`Song` / `SongSource` を追加する設計
   （[DESIGN 4.5](docs/DESIGN.md)）に従う。
 
