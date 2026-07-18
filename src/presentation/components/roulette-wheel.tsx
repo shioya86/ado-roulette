@@ -36,7 +36,16 @@ const GAP_DEG = 1.2;
  * 盤の回転角を計算して回すだけ。抽選ロジックも乱数もここには無い。
  */
 export function RouletteWheel() {
-  const { items, result, isSpinning, startSpin, endSpin } = useRoulette();
+  const {
+    setlists,
+    selectedId,
+    selectSetlist,
+    items,
+    result,
+    isSpinning,
+    startSpin,
+    endSpin,
+  } = useRoulette();
 
   // 盤の累積回転角（deg）。単調増加させ、毎回さらに数周まわす。
   const [rotation, setRotation] = useState(0);
@@ -143,6 +152,23 @@ export function RouletteWheel() {
   return (
     <div className={styles.wrapper}>
       <Confetti burstId={burstId} />
+
+      {/* セトリ（ライブ）の切り替え。回転中は変更不可。 */}
+      <label className={styles.selector}>
+        <span className={styles.selectorLabel}>セトリ</span>
+        <select
+          className={styles.select}
+          value={selectedId ?? ""}
+          onChange={(e) => selectSetlist(e.target.value)}
+          disabled={isSpinning || setlists.length === 0}
+        >
+          {setlists.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}（{s.count}曲）
+            </option>
+          ))}
+        </select>
+      </label>
 
       <div className={styles.stage}>
         {/* 上部の固定ポインタ */}
