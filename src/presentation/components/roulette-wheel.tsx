@@ -158,24 +158,36 @@ export function RouletteWheel() {
             transitionDuration: `${durationMs}ms`,
           }}
         >
-          {items.map((item, i) => (
-            <div
-              key={item.id}
-              className={styles.label}
-              style={{ transform: `translateX(-50%) rotate(${i * seg + seg / 2}deg)` }}
-            >
-              <span
-                className={
-                  (!isSpinning && result?.id === item.id) ||
-                  (isSpinning && current?.id === item.id)
-                    ? `${styles.labelText} ${styles.winnerText}`
-                    : styles.labelText
-                }
+          {items.map((item, i) => {
+            const angle = i * seg + seg / 2;
+            return (
+              <div
+                key={item.id}
+                className={styles.label}
+                style={{ transform: `translateX(-50%) rotate(${angle}deg)` }}
               >
-                {item.label}
-              </span>
-            </div>
-          ))}
+                <span
+                  className={
+                    (!isSpinning && result?.id === item.id) ||
+                    (isSpinning && current?.id === item.id)
+                      ? `${styles.labelText} ${styles.winnerText}`
+                      : styles.labelText
+                  }
+                  // 円盤の回転(rotation)とセクター角(angle)を打ち消して、
+                  // 文字は常に画面に対して水平（正立）に保つ。
+                  // 同じ transition を掛けて円盤と同期して動かす。
+                  style={{
+                    transform: `rotate(${-(rotation + angle)}deg)`,
+                    transitionProperty: "transform",
+                    transitionDuration: `${durationMs}ms`,
+                    transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                >
+                  {item.label}
+                </span>
+              </div>
+            );
+          })}
 
           {/* 中心のハブ */}
           <div className={styles.hub} aria-hidden />
