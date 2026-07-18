@@ -13,14 +13,12 @@ const CONFETTI_COLORS = [
   "#fff59d",
 ];
 
-// 青薔薇をイメージした花弁の色（青系）。
-const PETAL_COLORS = [
-  "#1b3fd1",
-  "#2f5cff",
-  "#3a5bef",
-  "#5b7cff",
-  "#1e3a8a",
-  "#8fb0ff",
+// 青薔薇イメージの花弁の色。[表: 明るい, 表: 濃い（グラデ下端）, 裏: さらに濃い]
+const PETAL_TONES: Array<[string, string, string]> = [
+  ["#8fb0ff", "#1b3fd1", "#122a8f"],
+  ["#a9c3ff", "#2f5cff", "#1a3ac0"],
+  ["#7c9dff", "#1e3a8a", "#132a63"],
+  ["#b7ccff", "#3a5bef", "#243c9c"],
 ];
 
 interface Particle {
@@ -48,8 +46,18 @@ interface Petal {
   swayPhase: number;
   swaySpeed: number;
   swayAmp: number;
-  color: string;
+  grad: CanvasGradient; // 表面のグラデ（上=明るい, 下=濃い）
+  back: string; // 裏面の色
   life: number;
+}
+
+/** ハート型の花弁パスを現在の座標系に描く（下が尖り、上に2つの膨らみと切れ込み）。 */
+function heartPetalPath(ctx: CanvasRenderingContext2D, s: number) {
+  ctx.beginPath();
+  ctx.moveTo(0, s * 0.85); // 下の尖り
+  ctx.bezierCurveTo(-s * 1.2, s * 0.1, -s * 0.78, -s * 0.95, 0, -s * 0.28);
+  ctx.bezierCurveTo(s * 0.78, -s * 0.95, s * 1.2, s * 0.1, 0, s * 0.85);
+  ctx.closePath();
 }
 
 /**
@@ -57,7 +65,7 @@ interface Petal {
  *
  * burstId が変わるたびに、
  *   - カラフルな紙吹雪（弾けて落ちる）
- *   - 青薔薇イメージの青い花弁（ひらひら揺れながら舞い落ちる）
+ *   - 青薔薇イメージの厚みのあるハート型の花弁（揺れ・裏返りながら舞い落ちる）
  * を1回打ち上げる。純粋な見た目の演出なので presentation 層に閉じている。
  * prefers-reduced-motion が有効なら何も描かない。
  */
@@ -86,7 +94,7 @@ export function Confetti({ burstId }: { burstId: number }) {
     const originY = h * 0.32;
 
     // カラフルな紙吹雪。
-    const particles: Particle[] = Array.from({ length: 140 }, () => ({
+    const particles: Particle[] = Array.from({ length: 130 }, () => ({
       x: originX,
       y: originY,
       vx: (Math.random() - 0.5) * 16 * dpr,
@@ -98,23 +106,32 @@ export function Confetti({ burstId }: { burstId: number }) {
       life: 1,
     }));
 
-    // 青い花弁（少なめ・ゆっくり・ひらひら）。
-    const petals: Petal[] = Array.from({ length: 40 }, () => ({
-      x: originX + (Math.random() - 0.5) * 120 * dpr,
-      y: originY + (Math.random() - 0.5) * 40 * dpr,
-      vx: (Math.random() - 0.5) * 6 * dpr,
-      vy: (Math.random() * -5 - 0.5) * dpr,
-      size: (Math.random() * 6 + 8) * dpr,
-      rot: Math.random() * Math.PI * 2,
-      vrot: (Math.random() - 0.5) * 0.06,
-      flip: Math.random() * Math.PI * 2,
-      flipSpeed: 0.05 + Math.random() * 0.05,
-      swayPhase: Math.random() * Math.PI * 2,
-      swaySpeed: 0.03 + Math.random() * 0.03,
-      swayAmp: (0.6 + Math.random() * 1.2) * dpr,
-      color: PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)],
-      life: 1,
-    }));
+    // 青い花弁（少なめ・大きめ・ゆっくり・ひらひら）。
+    const petals: Petal[] = Array.from({ length: 38 }, () => {
+      const size = (Math.random() * 7 + 11) * dpr;
+      const tone = PETAL_TONES[Math.floor(Math.random() * PETAL_TONES.length)];
+      // 表面グラデ: 花弁上部を明るく、下部を濃く（立体感）。
+      const grad = ctx.createLinearGradient(0, -size, 0, size);
+      grad.addColorStop(0, tone[0]);
+      grad.addColorStop(1, tone[1]);
+      return {
+        x: originX + (Math.random() - 0.5) * 120 * dpr,
+        y: originY + (Math.random() - 0.5) * 40 * dpr,
+        vx: (Math.random() - 0.5) * 6 * dpr,
+        vy: (Math.random() * -5 - 0.5) * dpr,
+        size,
+        rot: Math.random() * Math.PI * 2,
+        vrot: (Math.random() - 0.5) * 0.05,
+        flip: Math.random() * Math.PI * 2,
+        flipSpeed: 0.045 + Math.random() * 0.05,
+        swayPhase: Math.random() * Math.PI * 2,
+        swaySpeed: 0.03 + Math.random() * 0.03,
+        swayAmp: (0.6 + Math.random() * 1.2) * dpr,
+        grad,
+        back: tone[2],
+        life: 1,
+      };
+    });
 
     const gravity = 0.35 * dpr;
     const petalGravity = 0.1 * dpr;
@@ -143,7 +160,7 @@ export function Confetti({ burstId }: { burstId: number }) {
         ctx.restore();
       }
 
-      // 青い花弁（左右に揺れながら裏返って落ちる）。
+      // 青い花弁（揺れながら裏返って落ちる）。
       for (const pt of petals) {
         pt.vy += petalGravity;
         pt.vy = Math.min(pt.vy, 3.2 * dpr); // ふわっと落ちる（終端速度を抑える）
@@ -151,24 +168,45 @@ export function Confetti({ burstId }: { burstId: number }) {
         pt.y += pt.vy;
         pt.rot += pt.vrot;
         pt.flip += pt.flipSpeed;
-        if (frame > 45) pt.life -= 0.009; // 紙吹雪より長く漂う
+        if (frame > 45) pt.life -= 0.008; // 紙吹雪より長く漂う
+
+        const facing = Math.cos(pt.flip); // +:表 / 0:真横（薄い） / -:裏
 
         ctx.save();
-        ctx.globalAlpha = Math.max(0, pt.life) * 0.92;
+        ctx.globalAlpha = Math.max(0, pt.life);
         ctx.translate(pt.x, pt.y);
         ctx.rotate(pt.rot);
-        // scaleX を振らすと薄い花弁が裏返るように見える。
-        ctx.scale(Math.cos(pt.flip), 1);
-        ctx.fillStyle = pt.color;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, pt.size, pt.size * 0.55, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.scale(facing, 1); // 横に潰れて裏返るフラッター
+
+        heartPetalPath(ctx, pt.size);
+        if (facing >= 0) {
+          // 表: グラデ + 上部に白いツヤ
+          ctx.fillStyle = pt.grad;
+          ctx.fill();
+          ctx.globalAlpha = Math.max(0, pt.life) * 0.35;
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.ellipse(
+            0,
+            -pt.size * 0.25,
+            pt.size * 0.42,
+            pt.size * 0.28,
+            0,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+        } else {
+          // 裏: 濃い単色
+          ctx.fillStyle = pt.back;
+          ctx.fill();
+        }
         ctx.restore();
       }
 
       const anyAlive =
         particles.some((p) => p.life > 0) || petals.some((p) => p.life > 0);
-      if (frame < 320 && anyAlive) {
+      if (frame < 340 && anyAlive) {
         raf = requestAnimationFrame(draw);
       } else {
         ctx.clearRect(0, 0, w, h);
