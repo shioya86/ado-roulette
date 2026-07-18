@@ -10,8 +10,14 @@ import {
 /**
  * useRoulette — ユースケースと React state をつなぐフック
  *
- * presentation 層の責務は「表示」と「操作の受け渡し」。
- * ここでは業務ルールを書かず、ユースケースを呼んで結果を state に反映するだけ。
+ * 回転アニメーションのために「開始」と「終了」を分ける:
+ *   - startSpin(): ユースケースで当選項目を先に決めて返す。
+ *     presentation はこの当選位置に向けて盤を回す（＝止まる位置の計算に使う）。
+ *   - endSpin(): アニメーションが終わったら結果を表示する。
+ *
+ * 注意: 業務ルール（誰が当たるか）は startSpin で確定済み。
+ * アニメーションの見た目・時間は presentation の都合であり、
+ * domain / application には一切影響しない。
  */
 export function useRoulette() {
   const [items, setItems] = useState<RouletteItemDTO[]>([]);
@@ -23,20 +29,19 @@ export function useRoulette() {
     listRouletteItemsUseCase.execute().then(setItems);
   }, []);
 
-  // ルーレットを回す。少し「回っている」演出を挟んでから結果を確定する。
-  const spin = useCallback(async () => {
-    if (isSpinning) return;
+  /** 回転開始。当選項目を確定して返す（見た目の回転は呼び出し側が担う）。 */
+  const startSpin = useCallback(async (): Promise<RouletteItemDTO | null> => {
+    if (isSpinning || items.length === 0) return null;
     setIsSpinning(true);
     setResult(null);
+    return spinRouletteUseCase.execute();
+  }, [isSpinning, items.length]);
 
-    const winner = await spinRouletteUseCase.execute();
-
-    // 演出用の短いウェイト（抽選ロジックとは無関係の見た目だけの都合）。
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
+  /** 回転終了。結果を確定表示する。 */
+  const endSpin = useCallback((winner: RouletteItemDTO) => {
     setResult(winner);
     setIsSpinning(false);
-  }, [isSpinning]);
+  }, []);
 
-  return { items, result, isSpinning, spin };
+  return { items, result, isSpinning, startSpin, endSpin };
 }
