@@ -113,10 +113,13 @@ export function RouletteWheel() {
       return;
     }
 
-    // 当選セクターの中心角（真上=0 から時計回り）。
-    const center = idx * seg + seg / 2;
-    // この中心をポインタ（真上=0）に持ってくるための最終角度（mod 360）。
-    const targetMod = (360 - center) % 360;
+    // 当選セクター内のランダムな位置で止める（毎回中央だと不自然なため）。
+    // 端の白線に重ならないよう、少しマージンを残した範囲から選ぶ。
+    const margin = Math.max(GAP_DEG + 1.5, seg * 0.18);
+    const landing =
+      idx * seg + margin + Math.random() * (seg - margin * 2);
+    // この着地点をポインタ（真上=0）に持ってくるための最終角度（mod 360）。
+    const targetMod = (360 - landing) % 360;
     const currentMod = ((rotation % 360) + 360) % 360;
 
     // アクセシビリティ: 動きを減らす設定なら回転を抑える。
