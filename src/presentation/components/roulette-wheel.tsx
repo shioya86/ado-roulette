@@ -43,8 +43,12 @@ export function RouletteWheel() {
     items,
     result,
     isSpinning,
+    history,
+    drawnIds,
+    remaining,
     startSpin,
     endSpin,
+    resetHistory,
   } = useRoulette();
 
   // 盤の累積回転角（deg）。単調増加させ、毎回さらに数周まわす。
@@ -112,8 +116,9 @@ export function RouletteWheel() {
           .join(", ")})`
       : "#eee";
 
-  const handleSpin = async () => {
-    const winner = await startSpin();
+  // excludeDrawn=true なら、既に出た曲を除外して回す（被りなし）。
+  const handleSpin = async (excludeDrawn: boolean) => {
+    const winner = await startSpin(excludeDrawn);
     if (!winner) return;
 
     const idx = items.findIndex((i) => i.id === winner.id);
@@ -186,6 +191,15 @@ export function RouletteWheel() {
         >
           {items.map((item, i) => {
             const angle = i * seg + seg / 2;
+            const highlighted =
+              (!isSpinning && result?.id === item.id) ||
+              (isSpinning && current?.id === item.id);
+            const isDrawn = drawnIds.has(item.id);
+            const labelClass = highlighted
+              ? `${styles.labelText} ${styles.winnerText}`
+              : isDrawn
+                ? `${styles.labelText} ${styles.drawnText}`
+                : styles.labelText;
             return (
               <div
                 key={item.id}
@@ -193,12 +207,7 @@ export function RouletteWheel() {
                 style={{ transform: `translateX(-50%) rotate(${angle}deg)` }}
               >
                 <span
-                  className={
-                    (!isSpinning && result?.id === item.id) ||
-                    (isSpinning && current?.id === item.id)
-                      ? `${styles.labelText} ${styles.winnerText}`
-                      : styles.labelText
-                  }
+                  className={labelClass}
                   // 円盤の回転(rotation)とセクター角(angle)を打ち消して、
                   // 文字は常に画面に対して水平（正立）に保つ。
                   // 同じ transition を掛けて円盤と同期して動かす。
@@ -220,13 +229,23 @@ export function RouletteWheel() {
         </div>
       </div>
 
-      <button
-        className={styles.spinButton}
-        onClick={handleSpin}
-        disabled={isSpinning || count === 0}
-      >
-        {isSpinning ? "回転中…" : "回す"}
-      </button>
+      <div className={styles.controls}>
+        <button
+          className={styles.spinButton}
+          onClick={() => handleSpin(false)}
+          disabled={isSpinning || count === 0}
+        >
+          {isSpinning ? "回転中…" : "回す"}
+        </button>
+        <button
+          className={styles.spinButtonAlt}
+          onClick={() => handleSpin(true)}
+          disabled={isSpinning || remaining.length === 0}
+          title="まだ出ていない曲だけで回す"
+        >
+          被りなしで回す
+        </button>
+      </div>
 
       {/* 回転中の実況（毎フレーム変わるので視覚のみ。読み上げはしない）。 */}
       <p
@@ -244,6 +263,30 @@ export function RouletteWheel() {
       <p className={styles.srOnly} aria-live="polite">
         {!isSpinning && result ? `結果: ${result.label}` : ""}
       </p>
+
+      {/* 当選履歴 */}
+      <div className={styles.history}>
+        <div className={styles.historyHead}>
+          <span className={styles.historyTitle}>
+            当選履歴（{history.length}）
+            {count > 0 && remaining.length === 0 ? " ・全曲コンプ！🎉" : ""}
+          </span>
+          <button
+            className={styles.resetButton}
+            onClick={resetHistory}
+            disabled={isSpinning || history.length === 0}
+          >
+            リセット
+          </button>
+        </div>
+        {history.length > 0 && (
+          <ol className={styles.historyList}>
+            {history.map((h, i) => (
+              <li key={`${h.id}-${i}`}>{h.label}</li>
+            ))}
+          </ol>
+        )}
+      </div>
     </div>
   );
 }

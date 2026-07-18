@@ -24,15 +24,30 @@ export class SpinRouletteUseCase {
     private readonly randomizer: Randomizer,
   ) {}
 
-  async execute(setlistId: string): Promise<RouletteItemDTO> {
+  /**
+   * @param setlistId  対象セトリ
+   * @param excludeIds 除外する項目 id（例: 既に当選済みの曲）。省略時は除外なし。
+   * @returns 当選項目。除外しきって候補が無ければ null。
+   */
+  async execute(
+    setlistId: string,
+    excludeIds: readonly string[] = [],
+  ): Promise<RouletteItemDTO | null> {
     const setlist = await this.repository.findById(setlistId);
     if (setlist === null) {
       throw new Error(`setlist not found: ${setlistId}`);
     }
 
-    // Roulette.create が空リストを弾くので、ここでは番号生成に集中できる。
-    const roulette = Roulette.create(setlist.getItems());
+    // 「出た曲を除外する」はアプリのポリシー。ここで候補を絞り込む
+    // （domain の Roulette は「渡された項目を均等に」に徹する）。
+    const exclude = new Set(excludeIds);
+    const candidates = setlist
+      .getItems()
+      .filter((item) => !exclude.has(item.id.toString()));
 
+    if (candidates.length === 0) return null; // 候補なし
+
+    const roulette = Roulette.create(candidates);
     const index = this.randomizer.nextIndex(roulette.size);
     const winner = roulette.pick(index);
 
