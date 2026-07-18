@@ -14,10 +14,10 @@
   height: 280px;
 }
 
-/* 上部に固定された下向きのスリムなポインタ（青アクセント）。 */
+/* 上部のポインタ（青アクセント）。円盤に食い込まないよう縁の真上に置く。 */
 .pointer {
   position: absolute;
-  top: 2px;
+  top: -20px; /* 三角形の高さ(19px)ぶん上げ、先端を縁の直上に合わせる */
   left: 50%;
   transform: translateX(-50%);
   width: 0;

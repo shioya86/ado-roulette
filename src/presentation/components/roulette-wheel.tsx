@@ -15,14 +15,14 @@ function angleFromTransform(transform: string): number | null {
   return (Math.atan2(b, a) * 180) / Math.PI;
 }
 
-// 扇形の色（Ado の青に寄せたクールトーンで統一）。項目数に合わせて循環。
+// 扇形の色（温色/寒色を交互に配したモダンなカラフル配色）。項目数に合わせて循環。
 const PALETTE = [
-  "#4895ef",
-  "#4361ee",
-  "#3f37c9",
-  "#4cc9f0",
-  "#560bad",
-  "#7209b7",
+  "#ef476f",
+  "#06d6a0",
+  "#ffd166",
+  "#118ab2",
+  "#f78c6b",
+  "#9b5de5",
 ];
 
 // セクター間に入れる細い白の区切り線の幅（度）。モダンな分割感を出す。
