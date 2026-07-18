@@ -51,12 +51,20 @@ interface Petal {
   life: number;
 }
 
-/** ハート型の花弁パスを現在の座標系に描く（下が尖り、上に2つの膨らみと切れ込み）。 */
-function heartPetalPath(ctx: CanvasRenderingContext2D, s: number) {
+/**
+ * 薔薇の花弁パスを現在の座標系に描く。
+ * 根元（下）が細くすぼまり、上に向かって幅広く開く扇形。
+ * 上辺は切れ込みのない1枚の丸いドーム（ハートにならないように）。
+ */
+function rosePetalPath(ctx: CanvasRenderingContext2D, s: number) {
   ctx.beginPath();
-  ctx.moveTo(0, s * 0.85); // 下の尖り
-  ctx.bezierCurveTo(-s * 1.2, s * 0.1, -s * 0.78, -s * 0.95, 0, -s * 0.28);
-  ctx.bezierCurveTo(s * 0.78, -s * 0.95, s * 1.2, s * 0.1, 0, s * 0.85);
+  ctx.moveTo(0, s); // 根元（下・細い）
+  // 左側面を膨らませながら上へ
+  ctx.bezierCurveTo(-s * 0.8, s * 0.75, -s * 1.12, 0, -s * 0.7, -s * 0.72);
+  // 上辺: 単一の丸いドーム（中央がいちばん高い）
+  ctx.quadraticCurveTo(0, -s * 1.28, s * 0.7, -s * 0.72);
+  // 右側面を下ろして根元へ
+  ctx.bezierCurveTo(s * 1.12, 0, s * 0.8, s * 0.75, 0, s);
   ctx.closePath();
 }
 
@@ -178,19 +186,19 @@ export function Confetti({ burstId }: { burstId: number }) {
         ctx.rotate(pt.rot);
         ctx.scale(facing, 1); // 横に潰れて裏返るフラッター
 
-        heartPetalPath(ctx, pt.size);
+        rosePetalPath(ctx, pt.size);
         if (facing >= 0) {
-          // 表: グラデ + 上部に白いツヤ
+          // 表: グラデ + 中ほどに白いツヤ
           ctx.fillStyle = pt.grad;
           ctx.fill();
-          ctx.globalAlpha = Math.max(0, pt.life) * 0.35;
+          ctx.globalAlpha = Math.max(0, pt.life) * 0.3;
           ctx.fillStyle = "#ffffff";
           ctx.beginPath();
           ctx.ellipse(
             0,
-            -pt.size * 0.25,
-            pt.size * 0.42,
-            pt.size * 0.28,
+            -pt.size * 0.4,
+            pt.size * 0.4,
+            pt.size * 0.3,
             0,
             0,
             Math.PI * 2,

@@ -5,7 +5,6 @@ import { RouletteWheel } from "@/presentation/components/roulette-wheel";
 export default function Home() {
   return (
     <main>
-      <h1>ado-roulette</h1>
       <RouletteWheel />
     </main>
   );
