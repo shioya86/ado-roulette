@@ -1,20 +1,21 @@
-import { RouletteItemRepository } from "@/domain/repositories/roulette-item-repository";
+import { SetlistRepository } from "@/domain/repositories/setlist-repository";
 import {
   RouletteItemDTO,
   toRouletteItemDTO,
 } from "@/application/dto/roulette-item-dto";
 
 /**
- * ListRouletteItemsUseCase — 「全項目を取得する」ユースケース
+ * ListRouletteItemsUseCase — 「選択中のセトリの項目一覧を取得する」ユースケース
  *
- * ルーレット盤を画面に描くために、現在の項目一覧を DTO で返す。
- * 回す操作（SpinRouletteUseCase）とは責務が別なので、ユースケースを分ける。
+ * ルーレット盤を描くために、指定セトリの項目を DTO で返す。
+ * セトリが見つからなければ空配列。
  */
 export class ListRouletteItemsUseCase {
-  constructor(private readonly repository: RouletteItemRepository) {}
+  constructor(private readonly repository: SetlistRepository) {}
 
-  async execute(): Promise<RouletteItemDTO[]> {
-    const items = await this.repository.findAll();
-    return items.map(toRouletteItemDTO);
+  async execute(setlistId: string): Promise<RouletteItemDTO[]> {
+    const setlist = await this.repository.findById(setlistId);
+    if (setlist === null) return [];
+    return setlist.getItems().map(toRouletteItemDTO);
   }
 }

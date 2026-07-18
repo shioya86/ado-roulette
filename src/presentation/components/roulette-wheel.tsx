@@ -36,7 +36,16 @@ const GAP_DEG = 1.2;
  * 盤の回転角を計算して回すだけ。抽選ロジックも乱数もここには無い。
  */
 export function RouletteWheel() {
-  const { items, result, isSpinning, startSpin, endSpin } = useRoulette();
+  const {
+    setlists,
+    selectedId,
+    selectSetlist,
+    items,
+    result,
+    isSpinning,
+    startSpin,
+    endSpin,
+  } = useRoulette();
 
   // 盤の累積回転角（deg）。単調増加させ、毎回さらに数周まわす。
   const [rotation, setRotation] = useState(0);
@@ -144,6 +153,23 @@ export function RouletteWheel() {
     <div className={styles.wrapper}>
       <Confetti burstId={burstId} />
 
+      {/* セトリ（ライブ）の切り替え。回転中は変更不可。 */}
+      <label className={styles.selector}>
+        <span className={styles.selectorLabel}>セトリ</span>
+        <select
+          className={styles.select}
+          value={selectedId ?? ""}
+          onChange={(e) => selectSetlist(e.target.value)}
+          disabled={isSpinning || setlists.length === 0}
+        >
+          {setlists.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}（{s.count}曲）
+            </option>
+          ))}
+        </select>
+      </label>
+
       <div className={styles.stage}>
         {/* 上部の固定ポインタ */}
         <div className={styles.pointer} aria-hidden />
@@ -158,24 +184,36 @@ export function RouletteWheel() {
             transitionDuration: `${durationMs}ms`,
           }}
         >
-          {items.map((item, i) => (
-            <div
-              key={item.id}
-              className={styles.label}
-              style={{ transform: `translateX(-50%) rotate(${i * seg + seg / 2}deg)` }}
-            >
-              <span
-                className={
-                  (!isSpinning && result?.id === item.id) ||
-                  (isSpinning && current?.id === item.id)
-                    ? `${styles.labelText} ${styles.winnerText}`
-                    : styles.labelText
-                }
+          {items.map((item, i) => {
+            const angle = i * seg + seg / 2;
+            return (
+              <div
+                key={item.id}
+                className={styles.label}
+                style={{ transform: `translateX(-50%) rotate(${angle}deg)` }}
               >
-                {item.label}
-              </span>
-            </div>
-          ))}
+                <span
+                  className={
+                    (!isSpinning && result?.id === item.id) ||
+                    (isSpinning && current?.id === item.id)
+                      ? `${styles.labelText} ${styles.winnerText}`
+                      : styles.labelText
+                  }
+                  // 円盤の回転(rotation)とセクター角(angle)を打ち消して、
+                  // 文字は常に画面に対して水平（正立）に保つ。
+                  // 同じ transition を掛けて円盤と同期して動かす。
+                  style={{
+                    transform: `rotate(${-(rotation + angle)}deg)`,
+                    transitionProperty: "transform",
+                    transitionDuration: `${durationMs}ms`,
+                    transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                >
+                  {item.label}
+                </span>
+              </div>
+            );
+          })}
 
           {/* 中心のハブ */}
           <div className={styles.hub} aria-hidden />

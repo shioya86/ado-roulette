@@ -7,6 +7,35 @@
   gap: 1.5rem;
 }
 
+/* セトリ切り替えセレクタ。 */
+.selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.selectorLabel {
+  font-size: 0.9rem;
+  color: #1b3fd1;
+}
+
+.select {
+  padding: 0.5rem 0.9rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1b2a4a;
+  background: #fff;
+  border: 2px solid #1b3fd1;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* 円盤とポインタを重ねる土台。 */
 .stage {
   position: relative;
@@ -57,11 +86,12 @@
 
 .labelText {
   display: inline-block;
-  padding-top: 14px;
+  /* 文字は常に画面に対して水平（正立）。位置だけ円盤とともに回る。 */
+  margin-top: 18px; /* 外周から少し内側に置く */
   color: #fff;
   font-weight: 700;
-  font-size: 0.9rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  font-size: 0.78rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   white-space: nowrap;
 }
 

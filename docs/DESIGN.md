@@ -50,6 +50,9 @@ infrastructure ─(契約を実装)→ domain / application
 | `Show the item currently under the pointer…` | 回転中の実際の角度を毎フレーム読み、ポインタ直下の項目をライブ表示 | 実況表示。**presentation のみ変更** |
 | `Add win effects…` | 紙吹雪・当選の発光・結果ポップ、および効果音（後に削除） | 演出強化。**presentation のみ変更** |
 | （効果音の削除） | 効果音・ファンファーレ・ミュートボタンと `useSound` を削除。紙吹雪・発光・ポップは維持 | 好みに合わせて音を除去。視覚演出は残す |
+| デザイン調整 | 青アクセント → 太い縁の撤去とモダン化 → カラフル配色 + 矢印の位置修正 → セクター内ランダム停止 → ラベルを常に正立表示 | 見た目・停止挙動の調整。**presentation のみ変更** |
+| モックの曲を実データ化 | seed をフルーツ → Ado の代表曲に置換 | infrastructure のデータ差し替え |
+| セトリ切り替え（4.5 の実装） | `Setlist`（SongSource）と `SetlistRepository` を追加。ライブ単位でルーレットの母集団を切り替え、選択を localStorage で保持 | domain/application/infrastructure/presentation にまたがる機能追加 |
 
 **要点**: 円盤アニメ・ライブ表示・紙吹雪・音の追加/削除は、すべて
 `presentation` 層の中だけで完結し、`domain` / `application` / `infrastructure`
@@ -109,6 +112,23 @@ domain の `RouletteItem`（メソッドや不変条件を持つ）を UI に直
 
 この方針なら、曲対応は主に **infrastructure（データ源）と domain（`Song` 等の追加）の
 差分**で入り、`Roulette` の抽選エンジンや UI の骨格は変えずに済む。
+
+### 4.5.1 実装（現状）
+
+上記のうち **セトリ切り替え**を、この app の必要範囲に絞って実装済み:
+
+- `Setlist`（domain エンティティ）= 「名前付きの曲コレクション」= SongSource の具体形。
+  ルーレットは項目しか必要としないため、`Setlist` は「名前 + `RouletteItem` の並び」の
+  最小構成にしている（グローバルな `Song` 台帳は今の要件では不要なので導入していない）。
+- `SetlistRepository`（契約）→ `StaticSetlistRepository`（コード内の静的データ）で実装。
+  ライブのセトリはコードに直書き（参照データなので DB 不要）。
+- `SpinRouletteUseCase` / `ListRouletteItemsUseCase` は `setlistId` を受け取り、
+  選択中セトリの項目で動く。`ListSetlistsUseCase` が切り替え用の一覧を返す。
+- 選択中セトリ id は `selectedSetlistStore`（localStorage）で永続化。
+- **`Roulette` エンジンと UI の骨格は無変更**のまま、母集団の切り替えだけを足せた。
+
+`Album` や `Song` 台帳への拡張が必要になったら、`SetlistRepository` の実装差し替え、
+または `SongSource` インターフェースの一般化で対応する（YAGNI で今は未導入）。
 
 ---
 

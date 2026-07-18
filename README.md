@@ -57,13 +57,15 @@ src/
 - **実装の差し替え（保存先・乱数）は `src/app/composition-root.ts` の1箇所だけ**を変える。
   新しい repository / randomizer を作って、ここで注入し替える。
 
-### 項目データを変えるとき（例: フルーツ → 曲名）
-- 当面は `src/infrastructure/repositories/local-storage-roulette-item-repository.ts` の
-  `DEFAULT_ITEMS` を書き換える（初回シードデータ）。
-- localStorage に**古いデータが残る**点に注意。保存キーは `ado-roulette:items`。
-  データ構造を変えたら、キーにバージョンを付ける等で旧データを無効化すること。
-- アルバム / セトリ単位の切り替えを入れる場合は、`Song` / `SongSource` を追加する設計
-  （[DESIGN 4.5](docs/DESIGN.md)）に従う。
+### セトリ（曲リスト）を変えるとき
+- 曲やセトリの追加・編集は
+  `src/infrastructure/repositories/static-setlist-repository.ts` の `SETLISTS` 配列を編集する。
+  1セトリ = `{ id, name, songs: [...] }`。`id` はセトリ間で一意にすること。
+- ルーレット上部のセレクタでセトリ（ライブ）を切り替えられる。選択は
+  localStorage（キー `ado-roulette:selected-setlist`）に保存され、再訪時に復元される。
+- セトリは `Setlist`（= DESIGN 4.5 の SongSource）として domain にモデル化されている。
+  データ源を API 等に替える場合は `SetlistRepository` の実装だけ差し替える
+  （内側の抽選ロジックは無変更）。
 
 ### GitHub Pages（静的エクスポート）の制約
 - **サーバー機能は使えない**（API Routes / SSR / `next/image` の最適化）。`images.unoptimized` 必須。
