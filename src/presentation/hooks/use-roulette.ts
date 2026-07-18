@@ -29,6 +29,8 @@ export function useRoulette() {
   const [result, setResult] = useState<RouletteItemDTO | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [history, setHistory] = useState<RouletteItemDTO[]>([]);
+  // 被りを許可するか（既定 false = 出た曲は盤から消す）。
+  const [allowRepeats, setAllowRepeats] = useState(false);
 
   // 初回マウント時にセトリ一覧を読み込み、前回の選択（あれば）を復元する。
   useEffect(() => {
@@ -58,6 +60,9 @@ export function useRoulette() {
     () => items.filter((i) => !drawnIds.has(i.id)),
     [items, drawnIds],
   );
+  // 盤に表示する項目。既定は「まだ出ていない曲」だけ（＝出たら盤から消える）。
+  // 被り許可なら全曲を表示する。
+  const displayItems = allowRepeats ? items : remaining;
 
   /** セトリ（ライブ）を切り替える。回転中は無視。 */
   const selectSetlist = useCallback(
@@ -71,21 +76,17 @@ export function useRoulette() {
 
   /**
    * 回転開始。当選項目を確定して返す（見た目の回転は呼び出し側が担う）。
-   * excludeDrawn=true なら、既に出た曲を除外して抽選する。
-   * 候補が無い場合は null。
+   * 被り許可でなければ、既に出た曲を除外して抽選する。候補が無ければ null。
    */
-  const startSpin = useCallback(
-    async (excludeDrawn: boolean): Promise<RouletteItemDTO | null> => {
-      if (isSpinning || selectedId === null || items.length === 0) return null;
-      if (excludeDrawn && remaining.length === 0) return null;
+  const startSpin = useCallback(async (): Promise<RouletteItemDTO | null> => {
+    if (isSpinning || selectedId === null) return null;
+    if (displayItems.length === 0) return null;
 
-      const excludeIds = excludeDrawn ? history.map((h) => h.id) : [];
-      setIsSpinning(true);
-      setResult(null);
-      return spinRouletteUseCase.execute(selectedId, excludeIds);
-    },
-    [isSpinning, selectedId, items.length, remaining.length, history],
-  );
+    const excludeIds = allowRepeats ? [] : history.map((h) => h.id);
+    setIsSpinning(true);
+    setResult(null);
+    return spinRouletteUseCase.execute(selectedId, excludeIds);
+  }, [isSpinning, selectedId, allowRepeats, displayItems.length, history]);
 
   /** 回転終了。結果を確定表示し、履歴に記録する。 */
   const endSpin = useCallback((winner: RouletteItemDTO) => {
@@ -106,11 +107,14 @@ export function useRoulette() {
     selectedId,
     selectSetlist,
     items,
+    displayItems,
     result,
     isSpinning,
     history,
     drawnIds,
     remaining,
+    allowRepeats,
+    setAllowRepeats,
     startSpin,
     endSpin,
     resetHistory,
