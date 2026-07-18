@@ -40,12 +40,14 @@ export function RouletteWheel() {
     setlists,
     selectedId,
     selectSetlist,
-    items,
+    displayItems,
     result,
     isSpinning,
     history,
     drawnIds,
     remaining,
+    allowRepeats,
+    setAllowRepeats,
     startSpin,
     endSpin,
     resetHistory,
@@ -64,7 +66,8 @@ export function RouletteWheel() {
   const [burstId, setBurstId] = useState(0); // 変わるたびに紙吹雪を1回打つ
   const prevIdxRef = useRef(-1);
 
-  const count = items.length;
+  // 盤に描くのは displayItems（既定は未当選のみ＝出たら消える）。
+  const count = displayItems.length;
   const seg = count > 0 ? 360 / count : 0;
 
   // 回転中は毎フレーム実際の角度を読み、ポインタ真下のセクターを更新する。
@@ -83,7 +86,7 @@ export function RouletteWheel() {
           const idx = Math.floor(topAngle / seg) % count;
           if (idx !== prevIdxRef.current) {
             prevIdxRef.current = idx;
-            setCurrent(items[idx] ?? null);
+            setCurrent(displayItems[idx] ?? null);
           }
         }
       }
@@ -91,7 +94,7 @@ export function RouletteWheel() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [isSpinning, seg, count, items]);
+  }, [isSpinning, seg, count, displayItems]);
 
   // 停止して結果が確定したら、紙吹雪を打つ。
   useEffect(() => {
@@ -104,7 +107,7 @@ export function RouletteWheel() {
   // 各セクターの末尾に細い白線を挟んで、モダンな分割線にする。
   const background =
     count > 0
-      ? `conic-gradient(from 0deg, ${items
+      ? `conic-gradient(from 0deg, ${displayItems
           .map((_, i) => {
             const c = PALETTE[i % PALETTE.length];
             const start = i * seg;
@@ -116,12 +119,11 @@ export function RouletteWheel() {
           .join(", ")})`
       : "#eee";
 
-  // excludeDrawn=true なら、既に出た曲を除外して回す（被りなし）。
-  const handleSpin = async (excludeDrawn: boolean) => {
-    const winner = await startSpin(excludeDrawn);
+  const handleSpin = async () => {
+    const winner = await startSpin();
     if (!winner) return;
 
-    const idx = items.findIndex((i) => i.id === winner.id);
+    const idx = displayItems.findIndex((i) => i.id === winner.id);
     if (idx < 0) {
       endSpin(winner);
       return;
@@ -189,7 +191,7 @@ export function RouletteWheel() {
             transitionDuration: `${durationMs}ms`,
           }}
         >
-          {items.map((item, i) => {
+          {displayItems.map((item, i) => {
             const angle = i * seg + seg / 2;
             const highlighted =
               (!isSpinning && result?.id === item.id) ||
@@ -227,24 +229,33 @@ export function RouletteWheel() {
           {/* 中心のハブ */}
           <div className={styles.hub} aria-hidden />
         </div>
+
+        {/* 未当選が無くなったら（全曲出た）盤の上に案内を出す。 */}
+        {count === 0 && (
+          <div className={styles.emptyOverlay}>
+            <span>全曲出ました🎉</span>
+            <span className={styles.emptyHint}>リセットで戻せます</span>
+          </div>
+        )}
       </div>
 
       <div className={styles.controls}>
         <button
           className={styles.spinButton}
-          onClick={() => handleSpin(false)}
+          onClick={handleSpin}
           disabled={isSpinning || count === 0}
         >
           {isSpinning ? "回転中…" : "回す"}
         </button>
-        <button
-          className={styles.spinButtonAlt}
-          onClick={() => handleSpin(true)}
-          disabled={isSpinning || remaining.length === 0}
-          title="まだ出ていない曲だけで回す"
-        >
-          被りなしで回す
-        </button>
+        <label className={styles.repeatToggle} title="出た曲も残して重複を許可する">
+          <input
+            type="checkbox"
+            checked={allowRepeats}
+            onChange={(e) => setAllowRepeats(e.target.checked)}
+            disabled={isSpinning}
+          />
+          被りを許可
+        </label>
       </div>
 
       {/* 回転中の実況（毎フレーム変わるので視覚のみ。読み上げはしない）。 */}
@@ -269,7 +280,9 @@ export function RouletteWheel() {
         <div className={styles.historyHead}>
           <span className={styles.historyTitle}>
             当選履歴（{history.length}）
-            {count > 0 && remaining.length === 0 ? " ・全曲コンプ！🎉" : ""}
+            {history.length > 0 && remaining.length === 0
+              ? " ・全曲コンプ！🎉"
+              : ""}
           </span>
           <button
             className={styles.resetButton}

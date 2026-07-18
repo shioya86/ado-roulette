@@ -54,7 +54,8 @@ infrastructure ─(契約を実装)→ domain / application
 | モックの曲を実データ化 | seed をフルーツ → Ado の代表曲に置換 | infrastructure のデータ差し替え |
 | セトリ切り替え（4.5 の実装） | `Setlist`（SongSource）と `SetlistRepository` を追加。ライブ単位でルーレットの母集団を切り替え、選択を localStorage で保持 | domain/application/infrastructure/presentation にまたがる機能追加 |
 | ライブ追加 | カムパネルラ/蜃気楼/マーズ/Wish/よだか/Ao の実在セトリ抜粋を投入 | infrastructure のデータ追加のみ |
-| カラオケ向け機能 | 当選履歴・被りなしで回す（除外）・履歴リセット。除外は `SpinRouletteUseCase` の `excludeIds` で実現し、履歴は presentation state。出た曲は盤上で薄く表示 | application に除外ポリシー、presentation に履歴 UI |
+| カラオケ向け機能 | 当選履歴・履歴リセット。除外は `SpinRouletteUseCase` の `excludeIds` で実現し、履歴は presentation state | application に除外ポリシー、presentation に履歴 UI |
+| 出た曲を盤から消す | 盤に描くのを `displayItems`（既定＝未当選のみ）に変更。当選するとセクターが減る。全曲出たらオーバーレイ表示。「被りを許可」トグルで全曲表示＋重複ありに切替 | presentation のみ変更（`Roulette`/use case は無変更） |
 
 **要点**: 円盤アニメ・ライブ表示・紙吹雪・音の追加/削除は、すべて
 `presentation` 層の中だけで完結し、`domain` / `application` / `infrastructure`
