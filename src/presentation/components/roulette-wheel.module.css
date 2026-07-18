@@ -105,6 +105,12 @@
     0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
+/* 既に当選した（＝出た）曲は薄く + 取り消し線で表示。 */
+.drawnText {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
 /* 円盤中心のハブ（白い円 + 中心に青のドット）。 */
 .hub {
   position: absolute;
@@ -131,29 +137,51 @@
   background: #1b3fd1;
 }
 
-.spinButton {
-  padding: 0.85rem 2.5rem;
-  font-size: 1.1rem;
+/* 2つの回すボタンを横並びに（狭い画面では折り返す）。 */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.spinButton,
+.spinButtonAlt {
+  padding: 0.85rem 1.8rem;
+  font-size: 1.05rem;
   font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.spinButton {
   color: #fff;
   /* Ado のイメージカラー（青）をアクセントに。 */
   background: linear-gradient(180deg, #2f5cff 0%, #1b3fd1 100%);
   border: none;
-  border-radius: 999px;
-  cursor: pointer;
   box-shadow: 0 4px 12px rgba(27, 63, 209, 0.35);
-  transition: opacity 0.15s ease, transform 0.05s ease;
 }
 
-.spinButton:hover:not(:disabled) {
+/* 被りなしで回す（サブ）: 白地に青枠。 */
+.spinButtonAlt {
+  color: #1b3fd1;
+  background: #fff;
+  border: 2px solid #1b3fd1;
+}
+
+.spinButton:hover:not(:disabled),
+.spinButtonAlt:hover:not(:disabled) {
   opacity: 0.92;
 }
 
-.spinButton:active:not(:disabled) {
+.spinButton:active:not(:disabled),
+.spinButtonAlt:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.spinButton:disabled {
+.spinButton:disabled,
+.spinButtonAlt:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -202,4 +230,58 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* 当選履歴パネル。 */
+.history {
+  width: 100%;
+  max-width: 340px;
+  border: 1px solid #e2e2ea;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: #fafafc;
+}
+
+.historyHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.historyTitle {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.resetButton {
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b3003b;
+  background: #fff;
+  border: 1.5px solid #e0397a;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.resetButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.historyList {
+  margin: 0.6rem 0 0;
+  padding-left: 1.4rem;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.15rem 1rem;
+  font-size: 0.9rem;
+}
+
+.historyList li {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
