@@ -1,0 +1,55 @@
+name: Deploy to GitHub Pages
+
+# main への push で実行。Actions タブから手動実行も可能。
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# GitHub Pages へのデプロイに必要な権限。
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時に走るデプロイは1つに絞る（新しい push を優先）。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # ① ビルド: Next.js を静的エクスポートして out/ をアーティファクト化。
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (static export)
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  # ② デプロイ: アーティファクトを GitHub Pages に公開。
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
