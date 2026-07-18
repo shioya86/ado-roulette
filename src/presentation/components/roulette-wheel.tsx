@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { RouletteItemDTO } from "@/application/dto/roulette-item-dto";
 import { useRoulette } from "@/presentation/hooks/use-roulette";
+import { useSound } from "@/presentation/hooks/use-sound";
+import { Confetti } from "./confetti";
 import styles from "./roulette-wheel.module.css";
 
 /** CSS の transform 行列（matrix(a,b,...)）から回転角（度）を取り出す。 */
@@ -43,12 +45,24 @@ export function RouletteWheel() {
   const [current, setCurrent] = useState<RouletteItemDTO | null>(null);
   const wheelRef = useRef<HTMLDivElement | null>(null);
 
+  // 演出まわり: 効果音・紙吹雪・ミュート設定。
+  const { tick: playTick, win: playWin } = useSound();
+  const [soundOn, setSoundOn] = useState(true);
+  const [burstId, setBurstId] = useState(0); // 変わるたびに紙吹雪を1回打つ
+  const soundOnRef = useRef(soundOn);
+  soundOnRef.current = soundOn;
+  const prevIdxRef = useRef(-1);
+
   const count = items.length;
   const seg = count > 0 ? 360 / count : 0;
 
   // 回転中は毎フレーム実際の角度を読み、ポインタ真下のセクターを更新する。
+  // セクターが変わった瞬間だけ「カチ」音を鳴らす。
   useEffect(() => {
-    if (!isSpinning || seg === 0) return;
+    if (!isSpinning || seg === 0) {
+      prevIdxRef.current = -1;
+      return;
+    }
     let raf = 0;
     const tick = () => {
       const el = wheelRef.current;
@@ -57,14 +71,26 @@ export function RouletteWheel() {
         if (deg !== null) {
           const topAngle = ((-deg % 360) + 360) % 360; // 真上に来ている角度
           const idx = Math.floor(topAngle / seg) % count;
-          setCurrent(items[idx] ?? null);
+          if (idx !== prevIdxRef.current) {
+            prevIdxRef.current = idx;
+            setCurrent(items[idx] ?? null);
+            if (soundOnRef.current) playTick();
+          }
         }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [isSpinning, seg, count, items]);
+  }, [isSpinning, seg, count, items, playTick]);
+
+  // 停止して結果が確定したら、紙吹雪とファンファーレを鳴らす。
+  useEffect(() => {
+    if (result && !isSpinning) {
+      setBurstId((b) => b + 1);
+      if (soundOnRef.current) playWin();
+    }
+  }, [result, isSpinning, playWin]);
 
   // 扇形の背景（conic-gradient は 0deg = 真上、時計回り）。
   const background =
@@ -113,6 +139,8 @@ export function RouletteWheel() {
 
   return (
     <div className={styles.wrapper}>
+      <Confetti burstId={burstId} />
+
       <div className={styles.stage}>
         {/* 上部の固定ポインタ */}
         <div className={styles.pointer} aria-hidden />
@@ -151,16 +179,36 @@ export function RouletteWheel() {
         </div>
       </div>
 
-      <button
-        className={styles.spinButton}
-        onClick={handleSpin}
-        disabled={isSpinning || count === 0}
-      >
-        {isSpinning ? "回転中…" : "回す"}
-      </button>
+      <div className={styles.controls}>
+        <button
+          className={styles.spinButton}
+          onClick={handleSpin}
+          disabled={isSpinning || count === 0}
+        >
+          {isSpinning ? "回転中…" : "回す"}
+        </button>
+
+        <button
+          type="button"
+          className={styles.muteButton}
+          onClick={() => setSoundOn((s) => !s)}
+          aria-pressed={soundOn}
+          aria-label={soundOn ? "効果音をオフにする" : "効果音をオンにする"}
+          title={soundOn ? "効果音: オン" : "効果音: オフ"}
+        >
+          {soundOn ? "🔊" : "🔇"}
+        </button>
+      </div>
 
       {/* 回転中の実況（毎フレーム変わるので視覚のみ。読み上げはしない）。 */}
-      <p className={styles.result} aria-hidden>
+      <p
+        className={
+          !isSpinning && result
+            ? `${styles.result} ${styles.resultWin}`
+            : styles.result
+        }
+        aria-hidden
+      >
         {isSpinning ? (current?.label ?? "…") : result ? `結果: ${result.label}` : " "}
       </p>
 
