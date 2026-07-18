@@ -1,8 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { RouletteItemDTO } from "@/application/dto/roulette-item-dto";
 import { useRoulette } from "@/presentation/hooks/use-roulette";
 import styles from "./roulette-wheel.module.css";
+
+/** CSS の transform 行列（matrix(a,b,...)）から回転角（度）を取り出す。 */
+function angleFromTransform(transform: string): number | null {
+  if (!transform || transform === "none") return null;
+  const m = transform.match(/matrix\(([^)]+)\)/);
+  if (!m) return null;
+  const [a, b] = m[1].split(",").map((v) => parseFloat(v));
+  return (Math.atan2(b, a) * 180) / Math.PI;
+}
 
 // 扇形の色。項目数に合わせて循環して使う。
 const PALETTE = [
@@ -29,8 +39,32 @@ export function RouletteWheel() {
   const [durationMs, setDurationMs] = useState(4000);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 回転中に「いまポインタ真下に来ている項目」。
+  const [current, setCurrent] = useState<RouletteItemDTO | null>(null);
+  const wheelRef = useRef<HTMLDivElement | null>(null);
+
   const count = items.length;
   const seg = count > 0 ? 360 / count : 0;
+
+  // 回転中は毎フレーム実際の角度を読み、ポインタ真下のセクターを更新する。
+  useEffect(() => {
+    if (!isSpinning || seg === 0) return;
+    let raf = 0;
+    const tick = () => {
+      const el = wheelRef.current;
+      if (el) {
+        const deg = angleFromTransform(getComputedStyle(el).transform);
+        if (deg !== null) {
+          const topAngle = ((-deg % 360) + 360) % 360; // 真上に来ている角度
+          const idx = Math.floor(topAngle / seg) % count;
+          setCurrent(items[idx] ?? null);
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isSpinning, seg, count, items]);
 
   // 扇形の背景（conic-gradient は 0deg = 真上、時計回り）。
   const background =
@@ -85,6 +119,7 @@ export function RouletteWheel() {
 
         {/* 回転する円盤 */}
         <div
+          ref={wheelRef}
           className={styles.wheel}
           style={{
             background,
@@ -100,7 +135,8 @@ export function RouletteWheel() {
             >
               <span
                 className={
-                  !isSpinning && result?.id === item.id
+                  (!isSpinning && result?.id === item.id) ||
+                  (isSpinning && current?.id === item.id)
                     ? `${styles.labelText} ${styles.winnerText}`
                     : styles.labelText
                 }
@@ -123,8 +159,14 @@ export function RouletteWheel() {
         {isSpinning ? "回転中…" : "回す"}
       </button>
 
-      <p className={styles.result} aria-live="polite">
-        {result ? `結果: ${result.label}` : isSpinning ? "抽選中…" : " "}
+      {/* 回転中の実況（毎フレーム変わるので視覚のみ。読み上げはしない）。 */}
+      <p className={styles.result} aria-hidden>
+        {isSpinning ? (current?.label ?? "…") : result ? `結果: ${result.label}` : " "}
+      </p>
+
+      {/* 最終結果だけをスクリーンリーダーに通知する。 */}
+      <p className={styles.srOnly} aria-live="polite">
+        {!isSpinning && result ? `結果: ${result.label}` : ""}
       </p>
     </div>
   );
