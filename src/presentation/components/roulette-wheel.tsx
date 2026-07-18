@@ -15,15 +15,18 @@ function angleFromTransform(transform: string): number | null {
   return (Math.atan2(b, a) * 180) / Math.PI;
 }
 
-// 扇形の色。項目数に合わせて循環して使う。
+// 扇形の色（温色/寒色を交互に配したモダンなカラフル配色）。項目数に合わせて循環。
 const PALETTE = [
-  "#e0397a",
-  "#f5a623",
-  "#7ed321",
-  "#4a90e2",
-  "#9013fe",
-  "#50e3c2",
+  "#ef476f",
+  "#06d6a0",
+  "#ffd166",
+  "#118ab2",
+  "#f78c6b",
+  "#9b5de5",
 ];
+
+// セクター間に入れる細い白の区切り線の幅（度）。モダンな分割感を出す。
+const GAP_DEG = 1.2;
 
 /**
  * RouletteWheel — 回転する円盤 UI
@@ -85,12 +88,17 @@ export function RouletteWheel() {
   }, [result, isSpinning]);
 
   // 扇形の背景（conic-gradient は 0deg = 真上、時計回り）。
+  // 各セクターの末尾に細い白線を挟んで、モダンな分割線にする。
   const background =
     count > 0
       ? `conic-gradient(from 0deg, ${items
           .map((_, i) => {
             const c = PALETTE[i % PALETTE.length];
-            return `${c} ${i * seg}deg ${(i + 1) * seg}deg`;
+            const start = i * seg;
+            const end = (i + 1) * seg;
+            return `${c} ${start}deg ${end - GAP_DEG}deg, #ffffff ${
+              end - GAP_DEG
+            }deg ${end}deg`;
           })
           .join(", ")})`
       : "#eee";
@@ -105,10 +113,13 @@ export function RouletteWheel() {
       return;
     }
 
-    // 当選セクターの中心角（真上=0 から時計回り）。
-    const center = idx * seg + seg / 2;
-    // この中心をポインタ（真上=0）に持ってくるための最終角度（mod 360）。
-    const targetMod = (360 - center) % 360;
+    // 当選セクター内のランダムな位置で止める（毎回中央だと不自然なため）。
+    // 端の白線に重ならないよう、少しマージンを残した範囲から選ぶ。
+    const margin = Math.max(GAP_DEG + 1.5, seg * 0.18);
+    const landing =
+      idx * seg + margin + Math.random() * (seg - margin * 2);
+    // この着地点をポインタ（真上=0）に持ってくるための最終角度（mod 360）。
+    const targetMod = (360 - landing) % 360;
     const currentMod = ((rotation % 360) + 360) % 360;
 
     // アクセシビリティ: 動きを減らす設定なら回転を抑える。
