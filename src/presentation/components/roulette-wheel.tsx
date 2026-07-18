@@ -15,15 +15,18 @@ function angleFromTransform(transform: string): number | null {
   return (Math.atan2(b, a) * 180) / Math.PI;
 }
 
-// 扇形の色。項目数に合わせて循環して使う。
+// 扇形の色（Ado の青に寄せたクールトーンで統一）。項目数に合わせて循環。
 const PALETTE = [
-  "#e0397a",
-  "#f5a623",
-  "#7ed321",
-  "#4a90e2",
-  "#9013fe",
-  "#50e3c2",
+  "#4895ef",
+  "#4361ee",
+  "#3f37c9",
+  "#4cc9f0",
+  "#560bad",
+  "#7209b7",
 ];
+
+// セクター間に入れる細い白の区切り線の幅（度）。モダンな分割感を出す。
+const GAP_DEG = 1.2;
 
 /**
  * RouletteWheel — 回転する円盤 UI
@@ -85,12 +88,17 @@ export function RouletteWheel() {
   }, [result, isSpinning]);
 
   // 扇形の背景（conic-gradient は 0deg = 真上、時計回り）。
+  // 各セクターの末尾に細い白線を挟んで、モダンな分割線にする。
   const background =
     count > 0
       ? `conic-gradient(from 0deg, ${items
           .map((_, i) => {
             const c = PALETTE[i % PALETTE.length];
-            return `${c} ${i * seg}deg ${(i + 1) * seg}deg`;
+            const start = i * seg;
+            const end = (i + 1) * seg;
+            return `${c} ${start}deg ${end - GAP_DEG}deg, #ffffff ${
+              end - GAP_DEG
+            }deg ${end}deg`;
           })
           .join(", ")})`
       : "#eee";

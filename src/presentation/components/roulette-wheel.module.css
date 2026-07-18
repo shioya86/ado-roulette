@@ -14,28 +14,29 @@
   height: 280px;
 }
 
-/* 上部に固定された下向きの三角ポインタ。 */
+/* 上部に固定された下向きのスリムなポインタ（青アクセント）。 */
 .pointer {
   position: absolute;
-  top: -6px;
+  top: 2px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-top: 22px solid #222;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 19px solid #1b3fd1;
   z-index: 2;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 2px 3px rgba(20, 40, 120, 0.35));
 }
 
-/* 回転する円盤本体。transform を JS から更新して回す。 */
+/* 回転する円盤本体。太い縁をやめ、薄い白リム + 柔らかい影で軽やかに。 */
 .wheel {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 6px solid #222;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 14px 34px rgba(20, 40, 120, 0.2),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.9);
   /* 減速して止まる ease-out。duration は inline で指定。 */
   transition-property: transform;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
@@ -74,18 +75,30 @@
     0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
-/* 円盤中心のハブ。 */
+/* 円盤中心のハブ（白い円 + 中心に青のドット）。 */
 .hub {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: #fff;
-  border: 4px solid #222;
+  box-shadow: 0 2px 8px rgba(20, 40, 120, 0.28);
   z-index: 1;
+}
+
+.hub::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #1b3fd1;
 }
 
 .spinButton {
